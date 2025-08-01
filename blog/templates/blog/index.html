@@ -1,0 +1,120 @@
+{% extends "blog/basic.html" %}
+{% block blogactive %}active{% endblock blogactive %}
+{% block body %}
+  <div class="container mt-2 bdy">
+    <div class="row my-2">
+
+        {% for item in myposts %}
+        <div class="col-md-6">
+          <div class="row g-0 border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative" style="width: 480px;">
+            <div class="col p-4 d-flex flex-column position-static">
+              <strong class="d-inline-block mb-2 text-primary-emphasis">{{ item.title }}</strong>
+              <h3 class="mb-0">{{ item.head0|slice:20 }}</h3>
+              <div class="mb-1 text-body-secondary">{{ item.pub_date }}</div>
+              <p class="card-text mb-auto">
+                {{ item.head1|slice:30 }}...
+              </p>
+              <a href="blogpost/{{ item.post_id }}" class="icon-link gap-1 icon-link-hover stretched-link">
+                Continue reading
+                <svg class="bi" aria-hidden="true">
+                  <use xlink:href="#chevron-right"></use>
+                </svg>            </a>
+            </div>
+            <div class="col-auto d-none d-lg-block">
+              <img src="/media/{{ item.thumbnail }}" aria-label="Placeholder: Thumbnail"
+                  class="bd-placeholder-img "
+                  height="200px"
+                  width="150px"
+                />
+            </div> 
+          </div>
+        </div>
+        {% if forloop.counter|divisibleby:4 %}
+      </div><div class="row my-2"></div>
+      {% endif %}
+      {% endfor %}
+    </div>
+      <script>
+        document.addEventListener("DOMContentLoaded", function(){
+        if (localStorage.getItem('cart') === null){
+        cart = {}; 
+        }
+        else{
+        cart = JSON.parse(localStorage.getItem('cart')); // Retrieve the cart from localStorage
+        updateCartDisplay(cart);
+        }
+
+        function updateCartDisplay(cart) {
+        let totalItems = 0;
+         for (let item in cart) {
+          const qty = parseInt(cart[item].qty);
+          if (!isNaN(qty)) {
+            totalItems += qty;
+          }
+        }
+        const cartCounter = document.getElementById('cart');
+        if (cartCounter) cartCounter.innerHTML = totalItems;
+        console.log("Total Items ",totalItems)
+  
+      }  
+        
+
+        // ===== SAVE CART TO BACKEND ON CHECKOUT =====
+        document.querySelectorAll('.save-to-checkout').forEach(button=> {
+            button.addEventListener("click", function(){
+                const cart_data = localStorage.getItem("cart");
+
+                fetch("/shop/cart/",{
+                    method : "POST",
+                    headers : {
+                        "Content-Type" : "application/json",
+                        "X-CSRFToken" : getCSRF(),
+                    },
+                    body : JSON.stringify({cart_data:cart_data}),
+                })
+                .then(()=>{
+                    window.location.href = "/shop/cart/";
+                    console.log('Cart Page redirect')
+                });
+
+                function getCSRF(){
+                    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+                    //return document.querySelector('[name=csrf-token]').content;
+                }
+            })
+        });
+      })
+
+        function sendCartToCartPage() {
+          const cart_data = localStorage.getItem("cart") || '{}';
+
+          fetch("/shop/cart/", {
+              method: "POST",
+              headers: {
+                  "Content-Type": "application/json",
+                  "X-CSRFToken": getCSRFToken(),
+              },
+              body: JSON.stringify({cart_data})
+          })
+          .then(response => response.json())
+          .then(data => {
+              console.log("Cart saved to session:", data);
+              window.location.href = "/shop/cart/"; // go to cart page
+          })
+          .catch(error => {
+              console.error("Error sending cart to backend:", error);
+          });
+      }
+
+    function getCSRFToken() {
+        //const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+        //return csrfInput ? csrfInput.value : '';
+        const csrfInput = document.querySelector('meta[name=csrf-token]');
+        if(csrfInput) return csrfInput.content;
+
+        const inputToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        //return csrfInput ? csrfInput.content : '';
+        return inputToken ? inputToken.value : '';
+    }
+      </script>
+    {% endblock %}

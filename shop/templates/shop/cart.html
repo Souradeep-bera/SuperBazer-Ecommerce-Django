@@ -1,0 +1,334 @@
+{% extends 'shop/basic.html' %}
+{% block title %}Cart - SuperBazer{% endblock %}
+{% block css %}
+body{
+    background: #e3f2fd;
+}
+.container{
+    margin: 55px;
+}
+.img{
+    position: absolute;
+    left: 75px;
+    margin-top: 35px;
+    width: 200px;
+    .btn 
+    min-width: 42px;
+}
+#divpr {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.row:hover {
+    background-color: #f9f9f9;
+    transition: background-color 0.3s ease-in-out;
+}
+.fotr{
+    position: relative;
+    bottom: -300px;
+}
+{% endblock css %}
+{% block body %}
+{% if not user.is_authenticated %}
+<div class="container my-4">
+    <div class="text-center mb-4 my-5">
+        <h5>Please Login or Signup</h5>
+        <a href="{% url 'loginPage' %}" class="btn btn-outline-primary mx-2 my-2">Login</a>
+        <a href="{% url 'signupPage' %}" class="btn btn-outline-warning my-2">Signup</a>
+    </div>
+</div>
+{% elif prod %}
+<div class="container my-4">
+    <div class="btn btn-danger position-relative clr" style="left: 90%;">Clear Cart</div>
+    {% for item in prod %}
+    {% csrf_token %}
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <img class="img" src="{{ item.product.image.url }}" alt="{{ item.product.product_name }}" width="">
+        </div>
+        <div class="col-md-8">
+            <h4 id="namepr{{ item.product.id }}">{{ item.product.product_name }}</h4>
+            <p>{{ item.product.desc }}</p>
+            <p id="quantity{{ item.product.id }}">Quantity: 0</p>
+            <p id="total-item{{ item.product.id }}">Price: ₹ {{ item.product.price }}</p>
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-4">
+                <div class="d-flex align-items-center gap-2" id="divpr{{ item.product.id }}" data-price="{{ item.product.price }}" data-name="{{ item.product.product_name }}"></div>
+                <div class="d-flex w-50 gap-2 flex-wrap" style="margin-right: 185px;">
+                    <button id="buy-now-btn{{ item.product.id }}" class="btn btn-success buy-now-btn save-to-checkout" data-product-id="{{ item.product.id }}" style="width:217px">Save for Checkout</button>
+                    <button class="btn btn-danger remove-item" data-product-id="{{ item.product.id }}" style="">Remove</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p>No items in your cart.</p>
+{% endif %}
+<script>
+// CSRF helper function
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+document.addEventListener("DOMContentLoaded", function() {
+    let cart;
+    const is_authenticated = {{ request.user.is_authenticated|yesno:"true,false" }}
+        
+    // Load cart from localStorage or initialize
+    if (localStorage.getItem('cart') === null) {
+        cart = {};
+    } else {
+        cart = JSON.parse(localStorage.getItem('cart')); // Retrieve the cart from localStorage
+        updateCart(cart);
+        updateCartDisplay(cart); // Show saved cart count on page load
+    }
+
+    // Send data to checkout page--
+    document.querySelectorAll('.save-to-checkout').forEach(button => {
+        button.addEventListener("click", function(e) {
+            e.preventDefault();
+            const cart = JSON.parse(localStorage.getItem("cart") || '{}');
+
+            fetch('/shop/checkout/', {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie("csrftoken")
+                    },
+                    body: JSON.stringify({
+                        cart_data: cart
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Response from Django:", data);
+                    if (data.status === "Success" && window.location.pathname !== "/shop/checkout/") {
+                        window.location.href = "/shop/cart/";
+                    }
+                })
+        })
+    })
+
+    // CSRF helper function
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Update Cart Display-
+    function updateCartDisplay(cart) {
+        let totalItems = 0;
+        for (let item in cart) {
+            const qty = parseInt(cart[item].qty);
+            if (!isNaN(qty)) {
+                totalItems += qty;
+            }
+        }
+        if (!is_authenticated){
+            totalItems = 0
+        }else{
+            const cartCounter = document.getElementById('cart');
+            if (cartCounter) cartCounter.innerHTML = totalItems;
+        }
+    }
+
+    // Function to update cart UI with plus/minus buttons-
+    function updateCart(cart) {
+        for (var item in cart) {
+            const div = document.getElementById('divpr' + item);
+            if (!div) continue;
+
+            let name = div.dataset.name;
+            let price = parseFloat(div.dataset.price);
+            let quantity = cart[item]?.qty || 1;
+
+            div.innerHTML = `
+            <button id="minus${item}" class="btn btn-primary minus">-</button> <span id="valpr${item}">${quantity}</span> <button id="plus${item}" class="btn btn-primary plus">+</button>`;
+            const nameTag = document.getElementById('name' + name);
+            const totalPrice = document.getElementById('total-item' + item);
+            const itemPrice = price * quantity;
+            if (totalPrice) {
+                totalPrice.innerText = `Price: ${itemPrice.toFixed(2)}`;
+            }
+
+            const quantityTag = document.getElementById('quantity' + item);
+            if (quantityTag) {
+                quantityTag.innerText = `Quantity: ${quantity}`;
+            }
+        }
+        localStorage.setItem('cart', JSON.stringify(cart));
+        updateCartDisplay(cart);
+    }
+
+
+
+    // Handle dynamic buttons (plus/minus/cart) using event delegation-
+    document.addEventListener("click", function(e) {
+        const target = e.target;
+        console.log("Target:", target)
+
+        // Minus button
+        if (target.classList.contains('minus')) {
+            const id = String(target.id.slice(5)); // remove 'minus'
+            const div = document.getElementById('divpr' + id);
+            if (cart[String(id)] !== undefined && div) {
+                cart[id].qty = Math.max(0, cart[id].qty - 1);
+                const price = parseFloat(div.dataset.price);
+                if (cart[id].qty <= 0) {
+                    delete cart[id];
+                    document.getElementById('divpr' + id).innerHTML = `<button id="pr${id}" class="btn btn-primary cart">Add To Cart</button>`;
+                    document.getElementById('total-item' + id).innerText = `Price: ₹ 0`;
+                    document.getElementById('quantity' + id).innerText = `Quantity: 0`;
+                } else {
+                    document.getElementById('valpr' + id).innerText = cart[id].qty;
+                    document.getElementById('total-item' + id).innerText = `Price: ₹ ${(price * cart[id].qty).toFixed(0)}`;
+                }
+                updateCart(cart);
+                updateCartDisplay(cart);
+            }
+        }
+
+        // Plus button
+        else if (target.classList.contains('plus')) {
+            const id = String(target.id.slice(4)); // remove 'plus'
+            if (cart[String(id)] !== undefined) {
+                cart[id].qty += 1;
+                document.getElementById('valpr' + id).innerText = cart[id].qty;
+                const price = parseFloat(document.getElementById('divpr' + id).dataset.price);
+                document.getElementById('total-item' + id).innerText = `Price: ₹ ${(price * cart[id].qty).toFixed(0)}`;
+
+                updateCart(cart);
+                updateCartDisplay(cart);
+            }
+        }
+
+        // "Add to Cart" button (added dynamically after quantity goes to 0)
+        else if (target.classList.contains('cart')) {
+            if (!is_authenticated) {
+                window.location.href = "/login/";
+                return;
+            }
+            const id = target.id.slice(2); // remove 'pr'
+            let div = document.getElementById('divpr' + id);
+
+            let name = "Unknown";
+            if (div) {
+                name = div.dataset.name || 'Unknown';
+                if (!name || name === 'Unknown') {
+                    const nameElem = document.getElementById('namepr' + id);
+                    if (nameElem) {
+                        name = nameElem.innerText.trim();
+                    }
+                }
+            }
+            if (cart[id]) {
+                cart[id].qty += 1;
+                console.log(cart)
+            } else {
+                cart[id] = {
+                    name: name,
+                    qty: 1
+                };
+            }
+            updateCart(cart);
+            updateCartDisplay(cart);
+        }
+
+        // Remove Button-
+        else if (target.classList.contains('remove-item')) {
+            const productId = target.dataset.productId;
+
+            delete cart[productId];
+
+            // Remove product row from DOM
+            const productRow = target.closest('.row');
+            if (productRow) productRow.remove();
+
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCart(cart); // No divs with removed item now
+            updateCartDisplay(cart);
+
+            if (Object.keys(cart).length === 0) {
+                document.querySelector(".container").innerHTML = `<h3 class="my-4">No items in your cart.</h3>`;
+            }
+        }
+    });
+    document.addEventListener("click", function(e) {
+        const target = e.target;
+
+        if (target.classList.contains("buy-now-btn")) {
+            const prodId = target.dataset.productId;
+            let cart = JSON.parse(localStorage.getItem("cart") || '{}');
+
+            if (cart && cart[prodId]) {
+                const quantity = cart[prodId].qty || 1;
+                if (confirm("Proceed to checkout now?")) {
+                    window.location.href = `/shop/checkout/?prodId=${prodId}&qty=${quantity}`;
+                }
+            } else {
+                alert("Product not found")
+            }
+        };
+    });
+
+    // Clear Cart Button-
+    const clearBtn = document.querySelector(".clr");
+    if (clearBtn) {
+        clearBtn.addEventListener("click", function() {
+            // Clear cart from localStorage
+            localStorage.setItem('cart', JSON.stringify({}));
+            // Remove all product rows from the DOM
+            document.querySelectorAll('.row').forEach(row => row.remove());
+            // Update cart visuals
+            updateCart({});
+
+            // notify Django backend of empty cart-
+            fetch('/shop/cart/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify({
+                    'cart_data': {},
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Cart cleared:", data);
+                const container = document.querySelector(".container");
+                if (container) {
+                    container.innerHTML = `
+                        <p>
+                            Your cart is empty.
+                        </p>
+                    `;
+                }
+            })
+        });
+    };
+});
+</script>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends 'shop/basic.html' %}
+{% block title %}About Us{% endblock %}
+{% block aboutactive %}active{% endblock aboutactive %}
+{% block css %}
+.fotr{
+position: relative;
+bottom: -105px;
+}
+{% endblock %}
+{% block body %}
+<section class="page-section bg-primary text-white mb-0 my-2" id="about">
+    <div class="container">
+        <!-- About Section Heading-->
+        <h2 class="page-section-heading text-center text-uppercase text-white p-3">About</h2>
+        <!-- Icon Divider-->
+        <div class="divider-custom divider-light">
+            <div class="divider-custom-line"></div>
+            <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+            <div class="divider-custom-line"></div>
+        </div>
+        <!-- About Section Content-->
+        <div class="row">
+            <div class="row ms-auto">
+                <p class="lead">SuperBazer is guided by four principles: customer obsession rather than competitor focus, passion for invention, commitment to operational excellence, and long-term thinking. We strive to be Earth’s most customer-centric company, Earth’s best employer, and Earth’s safest place to work. </p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="row me-auto">
+                <p class="lead text-center text-wrap fs-4 fw-bolder">SuperBazer’s “Day 1” mentality is our approach to doing everything with the energy and entrepreneurial spirit of a new organization on its first day.
+                </p>
+            </div>
+            <div class="row me-auto">
+                <p class="sticky-md-top">Working to earn and keep our customers’ trust is the single biggest driver of SuperBazer’s Day 1 approach. SuperBazer’s decision-making process asks employees to consider whether an action is a one-way door—consequential and nearly irreversible—or a two-way door, easy to change course and go back. Discover more about who we are through our Leadership Principles.</p>
+            </div>
+        </div>
+    </div>
+    </div>
+</section>
+<script>
+    if (localStorage.getItem('cart') === null) {
+        cart = {};
+    } else {
+        cart = JSON.parse(localStorage.getItem('cart')); // Retrieve the cart from localStorage
+        updateCartDisplay(cart);
+    }
+
+    function updateCartDisplay(cart) {
+        let totalItems = 0;
+        for (let item in cart) {
+            const qty = parseInt(cart[item].qty);
+            if (!isNaN(qty)) {
+                totalItems += qty;
+            }
+        }
+        const cartCounter = document.getElementById('cart');
+        if (cartCounter) cartCounter.innerHTML = totalItems;
+        console.log("Total Items ", totalItems)
+    }
+    // Back to cart page-
+    function sendCartToCartPage() {
+        const cart_data = localStorage.getItem("cart");
+        fetch("/shop/cart/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCSRFToken(),
+                },
+                body: JSON.stringify({ cart_data })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Cart saved to session:", data);
+                window.location.href = "/shop/cart/"; // go to cart page
+            })
+            .catch(error => {
+                console.error("Error sending cart to backend:", error);
+            });
+    }
+
+    function getCSRFToken() {
+        const csrfInput = document.querySelector('meta[name=csrf-token]');
+        return csrfInput ? csrfInput.content : '';
+    }
+</script>
+{% endblock %}

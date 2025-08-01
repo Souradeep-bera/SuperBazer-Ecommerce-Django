@@ -1,0 +1,134 @@
+{% extends "blog/basic.html" %}
+{% block title %} Blogpost Page - SuperBazer Online Store {% endblock %}
+{% block blogactive %}active{% endblock blogactive %}
+{% block css %}
+.fotr{
+    position: relative;
+    bottom: -295px;
+}
+{% endblock css %}
+{% block body %}
+    <div class="container">
+        {% if user.is_authenticated %}
+        <div class="row mt-4">
+            <div class="col-md-8 blog-main">
+                <h3 class="font-italic">
+                    {{ post.title }}
+                </h3>
+                <div class="fb-like" data-href="http://127.0.0.1:8000/blog/blogpost/{{ post.post_id }}" data-width="" data-layout="" data-action="" data-size="" data-share="true"></div>
+                <div class="blog-post">
+                    <h2 class="blog-post-title">{{ post.head0 }}</h2>
+                    <p>{{ post.chead0 }}</p>
+                    <h4>{{ post.head1 }}</h4>
+                    <p>{{ post.chead1 }}</p>
+                    <h4>{{ post.head2 }}</h4>
+                    <p>{{ post.chead2 }}</p>
+                    <div class="fb-comments" data-href="http://127.0.0.1:8000/blog/blogpost/{{ post.post_id }}" data-width="" data-numposts="5"></div>
+                </div><!-- /.blog-post -->
+            </div><!-- /.blog-main -->
+            <aside class="col-md-4 blog-sidebar">
+                <div class="p-4 mb-3 bg-light rounded">
+                    <h4 class="font-italic">About</h4>
+                    <p class="mb-0">SuperBazer is an <em>ecommerce website</em>. You can use it for buying and searching items online. </p>
+                </div>
+                <div class="p-4">
+                    <h4 class="font-italic">Contact Us On: </h4>
+                    <ol class="list-unstyled">
+                        <li><a href="#">GitHub</a></li>
+                        <li><a href="#">Twitter</a></li>
+                        <li><a href="#">Facebook</a></li>
+                    </ol>
+                </div>
+            </aside><!-- /.blog-sidebar -->
+        </div>
+        {% else %}
+        <div class="row-md-2 my-3">
+            <h3>You must be logged in to read the full blog....</h3>
+            <a class="btn btn-outline-primary mx-2 my-4" href="{% url 'loginPage' %}">Login</a>
+        </div>
+        {% endif %}
+    </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function(){
+        if (localStorage.getItem('cart') === null){
+        cart = {}; 
+        }
+        else{
+        cart = JSON.parse(localStorage.getItem('cart')); // Retrieve the cart from localStorage
+        updateCartDisplay(cart);
+        }
+
+        function updateCartDisplay(cart) {
+        let totalItems = 0;
+         for (let item in cart) {
+          const qty = parseInt(cart[item].qty);
+          if (!isNaN(qty)) {
+            totalItems += qty;
+          }
+        }
+        const cartCounter = document.getElementById('cart');
+        if (cartCounter) cartCounter.innerHTML = totalItems;
+        console.log("Total Items ",totalItems)
+  
+      }  
+        
+
+        // ===== SAVE CART TO BACKEND ON CHECKOUT =====
+        document.querySelectorAll('.save-to-checkout').forEach(button=> {
+            button.addEventListener("click", function(){
+                const cart_data = localStorage.getItem("cart");
+
+                fetch("/shop/cart/",{
+                    method : "POST",
+                    headers : {
+                        "Content-Type" : "application/json",
+                        "X-CSRFToken" : getCSRF(),
+                    },
+                    body : JSON.stringify({cart_data:cart_data}),
+                })
+                .then(()=>{
+                    window.location.href = "/shop/cart/";
+                    console.log('Cart Page redirect')
+                });
+
+                function getCSRF(){
+                    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+                    //return document.querySelector('[name=csrf-token]').content;
+                }
+            })
+        });
+      })
+
+        function sendCartToCartPage() {
+          const cart_data = localStorage.getItem("cart") || '{}';
+
+          fetch("/shop/cart/", {
+              method: "POST",
+              headers: {
+                  "Content-Type": "application/json",
+                  "X-CSRFToken": getCSRFToken(),
+              },
+              body: JSON.stringify({cart_data})
+          })
+          .then(response => response.json())
+          .then(data => {
+              console.log("Cart saved to session:", data);
+              window.location.href = "/shop/cart/"; // go to cart page
+          })
+          .catch(error => {
+              console.error("Error sending cart to backend:", error);
+          });
+      }
+
+    function getCSRFToken() {
+        //const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+        //return csrfInput ? csrfInput.value : '';
+        const csrfInput = document.querySelector('meta[name=csrf-token]');
+        if(csrfInput) return csrfInput.content;
+
+        const inputToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        //return csrfInput ? csrfInput.content : '';
+        return inputToken ? inputToken.value : '';
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,236 @@
+{% extends 'shop/basic.html' %}
+{% block title %}{{ prod.product_name }} - Product Page{% endblock %}
+{% block css %}
+    .buy-btn{
+    position: relative;
+    top: 15px;
+    left: 339px;
+    }
+    .divpr{
+    position: absolute;
+    left: -101px;
+    }
+{% endblock %}
+{% block body %}
+    <div class="container my-4">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="row">
+                    <img class="col-md-8"
+                         src="/media/{{ prod.image }}"
+                         alt="{{ prod.product_name }}"
+                         width="150px">
+                    <div class="d-flex gap-3 mt-4 buy-btn" style="">
+                        <button class="btn btn-success w-50 buyNow">Buy Now</button>
+                        <span class="w-50 divpr"
+                              id="divpr{{ prod.id }}"
+                              data-price="{{ prod.price }}">
+                            <button id="pr{{ prod.id }}" class="btn btn-primary cart">Add to Cart</button>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-8 my-1" style="position: absolute; padding-left: 240px">
+                <h5 id="namepr{{ prod.product_name }}">{{ prod.product_name }}</h5>
+                <p>
+                    <b>Rs. {{ prod.price }}</b>
+                </p>
+                <p>{{ prod.desc }}</p>
+            </div>
+        </div>
+    </div>
+<script>
+
+if (localStorage.getItem('cart') === null) {
+    var cart = {};
+} else {
+    cart = JSON.parse(localStorage.getItem('cart')); // Retrieve the cart from localStorage
+    updateCart(cart);
+    updateCartDisplay(cart) // Show saved cart count on page load
+}
+// Update Cart Display-
+function updateCartDisplay(cart) {
+    let totalItems = 0;
+    for (let item in cart) {
+        if (typeof cart[item] === 'object') {
+            totalItems += cart[item].qty || 0; // Calculate the total number of items in the cart
+        } else {
+            totalItems += cart[item]; // For older format like cart[id] = 1;
+        }
+    }
+    document.getElementById('cart').innerHTML = totalItems; // Update the cart count on the page
+}
+
+// Function to update cart UI with plus/minus buttons-
+function updateCart(cart) {
+    var sum = 0;
+    for (var item in cart) {
+        sum = sum + cart[item];
+        const div = document.getElementById('divpr' + item);
+        if (div) {
+            div.innerHTML = `<button id="minus${item}" class="btn btn-primary minus">-</button><span id="valpr${item}">${cart[item].qty}</span><button id="plus${item}" class="btn btn-primary plus">+</button>`;
+        }
+    }
+    // Save updated cart to localStorage
+    localStorage.setItem('cart', JSON.stringify(cart));
+}
+
+// Buy Now Button-
+document.querySelector(".buyNow").addEventListener("click", (e) => {
+    e.preventDefault();
+    const prodctData = {
+        id: {{ prod.id}},
+        name: {{ prod.product_name }},
+        price: {{ prod.price }},
+        qty: 1,
+    };
+
+    fetch("/shop/buynow/", {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json',
+            "X-CSRFToken": getCookie('csrftoken'),
+        },
+        body: JSON.stringify(prodctData),
+    })
+    .then(response =>{
+        if (response.ok){
+            window.location.href = "/shop/checkout/";
+        }else{
+            message.warning("Something went wrong while buying. Try again.")
+        }
+    })
+    .catch(error =>{
+        console.error("Error during buy now:", error);
+        message.error("Something went wrong while buying. Try again.");
+    })
+
+    function getCSRFToken() {
+        const name = "csrftoken";
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            if (cookie.trim().startsWith(name + '=')) {
+                return cookie.trim().substring(name.length + 1);
+            }
+        }
+        return '';
+    }
+})
+
+// Handle dynamic buttons (plus/minus/cart) using event delegation-
+document.querySelectorAll(".divpr").forEach(function(container) {
+    container.addEventListener("click", function(e) {
+        const target = e.target;
+
+        // Minus button
+        if (target.classList.contains('minus')) {
+            const id = target.id.slice(5); // remove 'minus'
+            if (cart[id] !== undefined) {
+                cart[id].qty = Math.max(0, cart[id].qty - 1);
+                if (cart[id].qty === 0) {
+                    delete cart[id];
+                    document.getElementById('divpr' + id).innerHTML = `<button id="pr${id}" class="btn btn-primary cart" data-name="{{ prod.product_name }}" data-price="{{ prod.price }}>Add To Cart</button>`;
+                } else {
+                    document.getElementById('valpr' + id).innerText = cart[id].qty;
+                }
+                updateCart(cart);
+                updateCartDisplay(cart);
+            }
+        }
+
+        // Plus button
+        else if (target.classList.contains('plus')) {
+            const id = target.id.slice(4); // remove 'plus'
+            if (cart[id] !== undefined) {
+                cart[id].qty += 1;
+                document.getElementById('valpr' + id).innerText = cart[id].qty;
+                updateCart(cart);
+                updateCartDisplay(cart);
+            }
+        }
+
+        // "Add to Cart" button (added dynamically after quantity goes to 0)
+        else if (target.classList.contains('cart')) {
+            const id = target.id.slice(2); // remove 'pr'
+            const nameFromData = target.getAttribute('data-name') || "Unknown";
+            const priceFromData = parseFloat(target.getAttribute('data-price')) || 0;
+            
+            if (cart[id] !== undefined) {
+                cart[id].qty += 1;
+            } else {
+                //cart[id] = 1;
+               // let nameElem = document.getElementById('namepr' + id);
+                //let name = nameElem ? nameElem.innerText : 'Unknown';
+                cart[id] = {
+                    name: nameFromData,
+                    qty: 1,
+                    price: priceFromData,
+                }
+            }
+            updateCart(cart);
+            updateCartDisplay(cart);
+        }
+    });
+});
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+
+// Send Data to Cart Page=
+document.addEventListener("DOMContentLoaded", function() {
+    const cartLink = document.getElementById("cart-link");
+
+    if (cartLink) {
+        cartLink.addEventListener("click", function(e) {
+            e.preventDefault(); // prevent normal link behavior
+            sendCartToCartPage();
+        });
+    }
+
+
+});
+
+function sendCartToCartPage() {
+    const cart_data = localStorage.getItem("cart") || '{}';
+
+    fetch("/shop/cart/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCSRFToken(),
+            },
+            body: JSON.stringify({ cart_data })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Cart saved to session:", data);
+            window.location.href = "/shop/cart/"; // go to cart page
+        })
+        .catch(error => {
+            console.error("Error sending cart to backend:", error);
+        });
+}
+
+function getCSRFToken() {
+    const csrfInput = document.querySelector('meta[name=csrf-token]');
+    if (csrfInput) return csrfInput.content;
+
+    const inputToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    return inputToken ? inputToken.value : '';
+}
+    </script>
+{% endblock %}

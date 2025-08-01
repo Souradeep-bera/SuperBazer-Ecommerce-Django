@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="csrf-token" content="{{ csrf_token }}">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css"
+              rel="stylesheet"
+              integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7"
+              crossorigin="anonymous">
+        <title>
+            {% block title %}{% endblock %}
+        </title>
+        <style>
+        @media only screen and (max-width: 995px) {
+            .navbr{
+                font-size: small;
+                font-weight: 700;
+            }
+        }
+        </style>
+        <style>{% block css %}{% endblock %}</style>
+    </head>
+    <body>
+        <!--Nav Part-->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3">
+            <div class="container-fluid navbr">
+                <a class="navbar-brand" href="/shop">SuperBazer</a>
+                <button class="navbar-toggler"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#navbarSupportedContent"
+                        aria-controls="navbarSupportedContent"
+                        aria-expanded="false"
+                        aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link {% block homeactive %}{% endblock homeactive %}"
+                               aria-current="page"
+                               href="/shop">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% block aboutactive %}{% endblock aboutactive %}"
+                               href="/shop/about">About Us</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% block trackeractive %}{% endblock trackeractive %}"
+                               href="/shop/tracker">Tracker</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% block contactactive %}{% endblock contactactive %}"
+                               href="/shop/contact">Contact Us</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% block blogactive %}{% endblock blogactive %}"
+                               href="/blog">Blog</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% block checkoutactive %}{% endblock checkoutactive %}"
+                               href="/shop/checkout">Checkout</a>
+                        </li>
+                    </ul>
+                    <!--Search-->
+                    <form class="d-flex me-3" role="search" method="get" action="/shop/search/">
+                        <input class="form-control me-2"
+                               type="search"
+                               placeholder="Search Product..."
+                               aria-label="Search"
+                               name="search"
+                               id="search">
+                        <button class="btn btn-outline-success" type="submit">Search</button>
+                    </form>
+                    <!--Authenticate-->
+                    <div class="dropdown me-3">
+                        {% if user.is_authenticated %}
+                            <ul class="navbar-nav ml-auto mr-2 mb-2 mb-lg-0">
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle"
+                                       href="#"
+                                       role="button"
+                                       data-bs-toggle="dropdown"
+                                       aria-expanded="false">Hi, {{ request.user }}</a>
+                                    <ul class="dropdown-menu" style="left: -48px; filter:">
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'handleLogout' %}">Logout</a>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        {% else %}
+                            <ul class="navbar-nav ml-auto mr-2 mb-2 mb-lg-0">
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle"
+                                       href="#"
+                                       role="button"
+                                       data-bs-toggle="dropdown"
+                                       aria-expanded="false">
+                                        <img src="/static/account/user.png"
+                                             alt="logo"
+                                             srcset=""
+                                             style="width: 25px;
+                                                    filter: invert(100%)">
+                                    </a>
+                                    <ul class="dropdown-menu" style="left: -68px; width: 180px;">
+                                        <li>
+                                            <!-- Button to trigger login modal -->
+                                            <a class="btn btn-outline-warning me-2"
+                                               href="{% url 'loginPage' %}"
+                                               style="margin-left: 15px">Login</a>
+                                        </li>
+                                        <li style="margin-left: 68px; margin-top: -39px;">
+                                            <!-- Button to trigger signup modal -->
+                                            <!-- Trigger modal instead of navigating to /signup/ -->
+                                            <a class="btn btn-outline-warning me-2"
+                                               href="{% url 'signupPage' %}"
+                                               style="margin-left: 25px">Signup</a>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        {% endif %}
+                    </div>
+                    <!--Cart-->
+                    <a class="btn btn-secondary mx-2"
+                       id="cart-link"
+                       href="{% url 'cart' %}">
+                        Cart (<span id="cart">
+                        {% if user.is_authenticated %}
+                            {{ request.session.cart|length }}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </span>)
+                </a>
+            </div>
+        </div>
+    </nav>
+    <!--Alert Message-->
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} mb-1 alert-dismissible fade show"
+             role="alert">
+            <strong>Message:</strong> {{ message }}
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Close"></button>
+        </div>
+    {% endfor %}
+    <!--Body Section-->
+    {% block body %}{% endblock %}
+    <footer class="py-3 my-4 bg-primary fotr">
+        <p class="text-center  text-light"
+           style="position: relative;
+                  bottom: -6px">
+            <strong>©2025 - A SuperBazer E-commerce Store</strong>
+        </p>
+    </footer>
+    <!--Footer Part-->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous">
+    </script>
+    <script>
+    setTimeout(function() {
+        let alerts = document.querySelectorAll(".alert");
+        alerts.forEach(function(alert) {
+            // Fade out using Bootstrap's dismiss
+            let bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+            bsAlert.close()
+        })
+    }, 3000)
+    </script>
+</body>
+</html>

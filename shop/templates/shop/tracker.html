@@ -1,0 +1,217 @@
+{% extends 'shop/basic.html' %}
+{% block title %}Tracer - SuperBazer Track your order {% endblock %}
+{% block trackeractive %}active{% endblock trackeractive %}
+{% block css %}
+body, html{
+height: 100%;
+marrgin: 0;
+}
+.card-img-top{
+margin-left: 18px;
+}
+.homePage{
+color: yellow;
+text-decoration: none;
+}
+.chkpg{
+margin: 0 318px;
+position: absolute;
+top: 68px;
+}
+.form-control{
+width: 300%;
+}
+.badge{
+color: yellow;
+background-color:rgb(64, 28, 226);
+}
+{% endblock %}
+{% block body %}
+<div class="container">
+    <div class="col my-4">
+        <h2>Enter your Order Id and Email address to track your order:</h2>
+        <form method="post" action="#" Id="trackerForm" class="d-flex justify-content-between align-items-center">
+            {% csrf_token %}
+            <div class="form-row position-relative">
+                <div class="form-group col-md-6 ">
+                    <label for="inputname">
+                        <b>Order Id:</b>
+                    </label>
+                    <input type="text" class="form-control" id="orderId" name="orderId" placeholder="Orer Id">
+                </div>
+                <div class="form-group col-md-6 my-2">
+                    <label for="inputEmail4">
+                        <b>Email:</b>
+                    </label>
+                    <input type="email" class="form-control " id="email" name="email" placeholder="Email">
+                </div>
+                <button type="submit" class="btn btn-primary my-2">Track Order</button>
+            </div>
+    </div>
+    <div class="col my-4">
+        <h2>Your Order Status :</h2>
+        <div class="my-4">
+            <ul class="list-group" id="items">
+                Enter your order Id and Email and click Track Order to find details about your order!
+            </ul>
+        </div>
+        <h2>Your Order Details :</h2>
+        <div class="my-4">
+            <ul class="list-group" id="citems">
+                Enter your order Id and Email and click Track Order to find details about your order!
+            </ul>
+        </div>
+    </div>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const trackerForm = document.getElementById("trackerForm");
+
+    trackerForm.addEventListener("submit", function(event) {
+        event.preventDefault(); // Prevent default form submission
+
+        const itemList = document.getElementById("items");
+        itemList.innerHTML = "";
+
+        const citemList = document.getElementById("citems");
+        citemList.innerHTML = "";
+
+        const orderId = document.querySelector("input[name=orderId]").value;
+        const email = document.querySelector("input[name=email]").value;
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        const formData = new FormData();
+        formData.append("orderId", orderId)
+        formData.append("email", email)
+        formData.append("csrfmiddlewaretoken", csrfToken);
+
+        fetch("/shop/tracker/", {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                let updates = data.updates;
+                let cart = data.cart;
+
+                try {
+                    if (typeof cart === 'string') {
+                        cart = JSON.parse(cart);
+                    }
+                } catch (e) {
+                    cart = {};
+                }
+
+                // ---------- Order Updates Section -----------------
+                if (Array.isArray(updates) && updates.length > 0) {
+                    updates.forEach(update => {
+                        const listItem = document.createElement('li');
+                        listItem.className = "list-group-item d-flex justify-content-between align-items-center";
+                        listItem.innerHTML = `${update.text} <span class="badge badge-primary badge-pill">${update.time}</span>`;
+                        itemList.appendChild(listItem);
+                    })
+                } else {
+                    const listItem = document.createElement("li");
+                    listItem.className = "list-group-item d-flex justify-content-between align-items-center";
+                    listItem.textContent = "Sorry, We are not able to fetch this order id and email. Make sure to type correct order Id and email";
+                    itemList.appendChild(listItem);
+                }
+
+                // ---------------- Cart Items Handle Section ---------------
+                if (cart && Object.keys(cart).length > 0) {
+                    for (let key in cart) {
+                        const product = cart[key];
+                        const clistItem = document.createElement('li');
+                        clistItem.className = "list-group-item d-flex justify-content-between align-items-center";
+                        clistItem.innerHTML = `${product.name || "Item"} ("Qty": ${product.qty}) <span class="badge badge-primary badge-pill">&#8377;${product.price}</span>`;
+                        citemList.appendChild(clistItem);
+                    }
+                } else {
+                    const clistItem = document.createElement("li");
+                    clistItem.className = "list-group-item d-flex justify-content-between align-items-center";
+                    clistItem.textContent = "Sorry, No Cart Details Found";
+                    citemList.appendChild(clistItem);
+                }
+
+            })
+            .catch(error => {
+                const listItem = document.createElement("li");
+                listItem.className = "list-group-item";
+                listItem.textContent = "Something went wrong while fetching data.";
+                itemList.appendChild(listItem);
+            });
+    });
+
+    //----------------------------------------------//-----------------------------------------------//
+    cart = {};
+    if (localStorage.getItem('cart') === null) {
+        cart = JSON.parse(localStorage.getItem('cart')); // Retrieve the cart from localStorage
+    }
+    updateCartDisplay(cart);
+
+    function updateCartDisplay(cart) {
+        let totalItems = 0;
+
+        for (let item in cart) {
+            const qty = parseInt(cart[item].qty);
+            if (!isNaN(qty)) {
+                totalItems += qty;
+            }
+        }
+        const cartCounter = document.getElementById('cart');
+        if (cartCounter) cartCounter.innerHTML = totalItems;
+
+    }
+})
+
+// ----------------- SAVE CART TO BACKEND ON CHECKOUT -------------------------
+document.querySelectorAll('.save-to-checkout').forEach(button => {
+    button.addEventListener("click", function() {
+        const cart_data = localStorage.getItem("cart");
+
+        fetch("/shop/cart/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCSRF(),
+                },
+                body: JSON.stringify({ cart_data: cart_data }),
+            })
+            .then(() => {
+                window.location.href = "/shop/cart/";
+            });
+
+        function getCSRF() {
+            return document.querySelector('[name=csrfmiddlewaretoken]').value;
+        }
+    })
+});
+
+// -------------------- BACK TO CART PAGE FUNCTION ---------------------------
+function sendCartToCartPage() {
+    const cart_data = localStorage.getItem("cart");
+
+    fetch("/shop/cart/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCSRFToken(),
+            },
+            body: JSON.stringify({ cart_data })
+        })
+        .then(response => response.json())
+        .then(data => {
+            window.location.href = "/shop/cart/"; // go to cart page
+        })
+        .catch(error => {
+            console.error("Error sending cart to backend:", error);
+        });
+}
+
+function getCSRFToken() {
+    const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (csrfInput) return csrfInput.content;
+    return csrfInput ? csrfInput.content : '';
+}
+</script>
+{% endblock %}

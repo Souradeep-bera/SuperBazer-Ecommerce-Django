@@ -1,0 +1,91 @@
+{% extends 'shop/basic.html' %}
+{% block title %}Pyment Status - SuperBazer Track your order {% endblock %}
+{% block css %}
+body, html{
+height: 100%;
+marrgin: 0;
+}
+{% endblock %}
+{% block body %}
+<div class="container">
+    {{ response }}
+    <div class="col my-4">
+        <h2>Payment Status {{ response.ORDERID }}</h2>
+        {% if response.STATUS == "TXN_SUCCESS" %}
+        <p>Order Successful</p>
+        {% else %}
+        <p>Just Missed to Your Order </p>
+        {% endif %}
+    </div>
+    <script>
+    //----------------------------------------------//-----------------------------------------------//
+    cart = {};
+    if (localStorage.getItem('cart') === null) {
+        cart = JSON.parse(localStorage.getItem('cart')); // Retrieve the cart from localStorage
+    }
+    updateCartDisplay(cart);
+
+    function updateCartDisplay(cart) {
+        let totalItems = 0;
+        for (let item in cart) {
+            const qty = parseInt(cart[item].qty);
+            if (!isNaN(qty)) {
+                totalItems += qty;
+            }
+        }
+        const cartCounter = document.getElementById('cart');
+        if (cartCounter) cartCounter.innerHTML = totalItems;
+    }
+
+
+    // ---------- SAVE CART TO BACKEND ON CHECKOUT --------------
+    document.querySelectorAll('.save-to-checkout').forEach(button => {
+        button.addEventListener("click", function() {
+            const cart_data = localStorage.getItem("cart");
+
+            fetch("/shop/cart/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCSRF(),
+                    },
+                    body: JSON.stringify({ cart_data: cart_data }),
+                })
+                .then(() => {
+                    window.location.href = "/shop/cart/";
+                });
+
+            function getCSRF() {
+                return document.querySelector('[name=csrfmiddlewaretoken]').value;
+            }
+        })
+    });
+
+    // ------------- BACK TO CART PAGE FUNCTION ------------------------
+    function sendCartToCartPage() {
+        const cart_data = localStorage.getItem("cart");
+
+        fetch("/shop/cart/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCSRFToken(),
+                },
+                body: JSON.stringify({ cart_data })
+            })
+            .then(response => response.json())
+            .then(data => {
+                window.location.href = "/shop/cart/"; // go to cart page
+            })
+            .catch(error => {
+                console.error("Error sending cart to backend:", error);
+            });
+    }
+
+    function getCSRFToken() {
+        const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrfInput) return csrfInput.content;
+        return csrfInput ? csrfInput.content : '';
+    }
+    </script>
+    {% endblock %}

@@ -1,0 +1,343 @@
+{% extends 'shop/basic.html' %}
+{% block title %}SearchPage - SuperBazer E-commerce Store {% endblock %}
+{% block css %}
+body{
+    background: #e3f2fd;
+}
+.container{
+padding: 0;
+}
+.col-md-3
+{
+display: block;
+margin-left: 0;
+}
+.carousel-indicators .active {
+background-color: blue;
+}
+.col-md-3 img{
+width: 100%;
+max-width: 265px;
+height: auto;
+margin: 2px 2px;
+display: block;
+}
+body .carousel-indicator li{
+background-color: blue;
+}
+body .carousel-indicators{
+bottom: -40px;
+}
+.carousel-indicators li{
+background-color: #7270fc;
+}
+body .carousel-indicators{
+bottom: -25px;
+}
+body .carousel-control-prev-icon,
+body .carousel-control-next-icon{
+background-color: blue;
+}
+.carousel-control-prev,
+.carousel-control-next{
+top: auto;
+bottom: auto;
+padding-top: 222px;
+}
+body .no-padding{
+padding-left: 0,
+padding-right: 0;
+}
+.card-img-top {
+height: 200px;
+object-fit: cover;
+margin: 0 auto;
+}
+.card-equal {
+display: flex;
+flex-direction: column;
+justify-content: space-between;
+height: 100%;
+}
+.card-body{
+flex-grow: 1;
+}
+.card {
+display: flex;
+flex-direction: column;
+height: 100%;
+width: 100%;
+}
+.card .btn {
+margin-top: auto;
+}
+.card-text {
+display: -webkit-box;
+-webkit-line-clamp: 2;
+-webkit-box-orient: vertical;
+overflow: hidden;
+}
+.butn{
+display: flex;
+justify-content: space-between;
+gap: 0.1rem;
+margin: 0 -12px;
+}
+.fotr{
+    position: relative;
+    bottom: -430px;
+}
+@media only screen and (max-width: 575px){
+    html, body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    }
+    .container, .slider, .carousel {
+    max-width: 100%;
+    overflow: hidden;
+    }
+    .shortDis{
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    display: flex;
+    scroll-sanp-type: x mandatory;
+    gap: 1rem;
+    padding: 1rem;
+    }
+    .shortDis .card-hit {
+    flex: 0 0 90%; /* Make each card take most of the screen width */
+    scroll-snap-align: start;
+    overflow-x: auto;
+    white-space: nowrap;
+    scroll-snap-type: x mandatory;
+    }
+    .card{
+    width: 100%;
+    }
+    .carousel-inner {
+    display: flex;
+    flex-wrap: nowrap;
+    }
+    .carousel-item {
+    flex: 0 0 100%;
+    max-width: 100%;
+    }
+    .carousel-control-prev,
+    .carousel-control-next {
+    display: none;
+    }
+    .butn{
+    margin: 0 -12px;
+    }
+}
+@media only screen and (max-width: 1400px){
+    .card img{
+    margin-left: 2px;
+    }
+}
+{% endblock %}
+{% block body %}
+{% load static %}
+<div class="container">
+    <!--Slideshow starts here -->
+    {% for product, range, nSlides in allProds %}
+    <h5 class="my-4">You search on {{ product.0.category }} </h5>
+    <div class="row">
+        <div id="demo{{ forloop.counter }}" class="col carousel slide my-3" data-ride="carousel">
+            <ul class="carousel-indicators">
+                <li data-target="#demo{{ forloop.counter }}" data-slide-to="0" class="active"></li>
+                {% for i in range %}
+                <li data-target="#demo{{ forloop.parentloop.counter }}" data-slide-to="{{ i }}"></li>
+                {% endfor %}
+            </ul>
+            <div class="container carousel-inner no-padding">
+                <div class="carousel-item active">
+                    <div class="row">
+                        {% for i in product %}
+                        <div class="col-xs-3 col-sm-3 col-md-3">
+                            <div class="card align-items-center" style="">
+                                <img src='/media/{{ i.image }}' class="card-img-top pic" alt="{{ i.product_name }}">
+                                <div class="card-body">
+                                    <h5 class="card-title" id="namepr{{ i.id }}">{{ i.product_name }}</h5>
+                                    <h6 class="card-title">
+                                        Price : <span id="pricepr{{ i.id }}">{{ i.price }}</span>
+                                    </h6>
+                                    <p class="card-text">{{ i.desc|slice:"0:53" }}...</p>
+                                    <div class="butn">
+                                        <span id="divpr{{ i.id }}" class="divpr ">
+                                            <button id="pr{{ i.id }}" class="btn btn-primary cart">Add To Cart</button>
+                                        </span>
+                                        <span class="">
+                                            <a href="/shop/products/{{ i.id }}">
+                                                <button id="qv{{ i.id }}" class="btn btn-primary">QuickView</button>
+                                            </a></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% if forloop.counter|divisibleby:8 and forloop.counter > 0 and not forloop.last %}
+                    </div>
+                    <div class="carousel-item">
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+{% block js %}
+<script>
+alert('{{msg}}');
+window.location.href = "/";
+
+// Find out the cart items from localStorage
+if (localStorage.getItem('cart') === null) {
+    var cart = {};
+} else {
+    cart = JSON.parse(localStorage.getItem('cart')); // Retrieve the cart from localStorage
+    updateCart(cart);
+    updateCartDisplay(cart) // Show saved cart count on page load
+}
+
+function updateCartDisplay(cart) {
+    let totalItems = 0;
+    for (let item in cart) {
+        if (typeof cart[item] === 'object') {
+            totalItems += cart[item].qty || 0; // Calculate the total number of items in the cart
+        } else {
+            totalItems += cart[item]; // For older format like cart[id] = 1;
+        }
+    }
+    document.getElementById('cart').innerHTML = totalItems; // Update the cart count on the page
+}
+
+function updateCart(cart) {
+    var sum = 0;
+    for (var item in cart) {
+        sum = sum + cart[item];
+        const div = document.getElementById('divpr' + item);
+        if (div) {
+            div.innerHTML = `<button id="minus${item}" class="btn btn-primary minus">-</button><span id="valpr${item}">${cart[item].qty}</span><button id="plus${item}" class="btn btn-primary plus">+</button>`;
+        }
+    }
+    // Save updated cart to localStorage
+    localStorage.setItem('cart', JSON.stringify(cart));
+}
+
+// If plus or minus button is clicked, change the cart as well as the display value
+document.querySelectorAll(".divpr").forEach(function(container) {
+    container.addEventListener("click", function(e) {
+        const target = e.target;
+
+        // Minus button
+        if (target.classList.contains('minus')) {
+            const id = target.id.slice(5); // remove 'minus'
+            if (cart[id] !== undefined) {
+                cart[id].qty = Math.max(0, cart[id].qty - 1);
+                if (cart[id].qty === 0) {
+                    delete cart[id];
+                    document.getElementById('divpr' + id).innerHTML = `<button id="pr${id}" class="btn btn-primary cart">Add To Cart</button>`;
+                } else {
+                    document.getElementById('valpr' + id).innerText = cart[id].qty;
+                }
+                updateCart(cart);
+                updateCartDisplay(cart);
+            }
+        }
+
+        // Plus button
+        else if (target.classList.contains('plus')) {
+            const id = target.id.slice(4); // remove 'plus'
+            if (cart[id] !== undefined) {
+                cart[id].qty += 1;
+                document.getElementById('valpr' + id).innerText = cart[id].qty;
+                updateCart(cart);
+                updateCartDisplay(cart);
+            }
+        }
+
+        // "Add to Cart" button (added dynamically after quantity goes to 0)
+        else if (target.classList.contains('cart')) {
+            const id = target.id.slice(2); // remove 'pr'
+            if (cart[id] !== undefined) {
+                cart[id].qty += 1;
+            } else {
+                //cart[id] = 1;
+                let nameElem = document.getElementById('namepr' + id);
+                let name = nameElem ? nameElem.innerText : 'Unknown';
+                cart[id] = {
+                    name: name || 'Unknown',
+                    qty: 1
+                }
+            }
+            updateCart(cart);
+            updateCartDisplay(cart);
+        }
+    });
+});
+
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+
+// Send Data to Cart Page=
+document.addEventListener("DOMContentLoaded", function() {
+    const cartLink = document.getElementById("cart-link");
+
+    if (cartLink) {
+        cartLink.addEventListener("click", function(e) {
+            e.preventDefault(); // prevent normal link behavior
+            sendCartToCartPage();
+        });
+    }
+
+
+});
+
+function sendCartToCartPage() {
+    const cart_data = localStorage.getItem("cart") || '{}';
+
+    fetch("/shop/cart/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCSRFToken(),
+            },
+            body: JSON.stringify({ cart_data })
+        })
+        .then(response => response.json())
+        .then(data => {
+            window.location.href = "/shop/cart/"; // go to cart page
+        })
+        .catch(error => {
+            console.error("Error sending cart to backend:", error);
+        });
+}
+
+function getCSRFToken() {
+    const csrfInput = document.querySelector('meta[name=csrf-token]');
+    if (csrfInput) return csrfInput.content;
+
+    const inputToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    return inputToken ? inputToken.value : '';
+}
+</script>
+{% endblock %}
