@@ -22,5 +22,5 @@
     </li>
 </ol>
 <b>Note: Also here using to created the HTML structure Bootstrap 5.3.2 
-and using Django 5.4.2</b>
+and using Django 5.4.2 and python 3.13.6</b>
 
