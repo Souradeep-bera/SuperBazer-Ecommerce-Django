@@ -1,5 +1,5 @@
 # SuperBazer E-commerce Store:
-<h1>eCommerce using Django(3.13.6)</h1>
+<h1>eCommerce using Django(5.2.5)</h1>
 <p>This eCommerce application created with Django and using simple sqlite db and with blog</p>
 <ol>
     <li>Admin - can take control of all the product. For example
