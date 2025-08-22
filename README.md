@@ -21,6 +21,6 @@
         </ul>
     </li>
 </ol>
-<b>Note: Also here using to created the HTML structure Bootstrap 5.3.2 
+<b>Note: Also here using to created the HTML structure Bootstrap 5.3.5 
 and using Django 5.4.2 and python 3.13.6</b>
 
